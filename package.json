@@ -9,8 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@types/express": "^4.16.1",
-    "@types/mysql": "^2.15.5",
+    "eslint": "^5.16.0",
     "express": "^4.16.4",
     "mysql": "^2.16.0"
   }
