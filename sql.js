@@ -339,8 +339,9 @@ export default class SQLServer {
 
 	/**
 	 * Selects from the database.
-	 * @param {SyllabusEntry} fields An object containing the fields to select.
+	 * @param {Partial<SyllabusEntry>} fields An object containing the fields to select.
 	 * For example, { course: "COT3210", professor_last: "Asai" } returns all rows where course = 'COT3210' AND professor_last = 'Asai'
+	 * An empty object selects all the fields from the database.
 	 * See the table above for a list of fields.
 	 * @returns {Promise<SyllabusEntry[]>}
 	 */
