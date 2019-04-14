@@ -10,7 +10,12 @@
   "license": "ISC",
   "dependencies": {
     "eslint": "^5.16.0",
+    "esm": "^3.2.22",
     "express": "^4.16.4",
-    "mysql": "^2.16.0"
+    "mysql": "^2.16.0",
+    "wtfnode": "^0.8.0"
+  },
+  "devDependencies": {
+    "jest": "^24.7.1"
   }
 }

@@ -9,6 +9,7 @@ const SyllabusEntryKeys = ["filename", "course", "professor_first", "professor_l
  * A given SQL error returns the bad query along with the error message.
  * A given string is just returned.
  * A given unknown object is turned into JSON.
+ * A given Error returns its message.
  * null/undefined return the string "Null error"
  * @param {any} e 
  * @returns {string} The converted error.
@@ -22,6 +23,9 @@ const errToString = e => {
 	}
 	if (e.sql !== undefined && e.sqlMessage !== undefined) {
 		return `Bad query ${e.sql}\n${e.sqlMessage}`;
+	}
+	if (e.message !== undefined) {
+		return e.message;
 	}
 	return JSON.stringify(e);
 };
@@ -44,7 +48,7 @@ const errToString = e => {
  * @returns {boolean}
  */
 const isSyllabusEntry = se => {
-	if (typeof se !== Object) {
+	if (typeof se !== "object") {
 		return false;
 	}
 
@@ -66,7 +70,7 @@ const isSyllabusEntry = se => {
  * @returns {boolean}
  */
 const isPartialSyllabusEntry = se => {
-	if (typeof se !== Object) {
+	if (typeof se !== "object") {
 		return false;
 	}
 
@@ -90,7 +94,8 @@ const isPartialSyllabusEntry = se => {
  * @returns {string}
  */
 const insertValues = (seArray, values) => seArray.reduce((a, v) => {
-	return a + ",(" + values.reduce((b, c) => b + "," + mysql.escape(v[c]) + ")";
+	return a + ",(" +
+		values.reduce((b, c) => b + "," + mysql.escape(v[c]), "").slice(1) + ")";
 }, "").slice(1);
 
 /**
@@ -242,11 +247,11 @@ export default class SQLServer {
 			});
 
 			// creates the tables
-			const iCreateTable = () => Promise => new Promise((res, rej) => {
+			const iCreateTable = () => new Promise((res, rej) => {
 				const sql =
-					`CREATE TABLE IF NOT EXISTS ${DB_NAME} (` +
-					"id INT AUTO INCREMENT PRIMARY KEY," +
-					"filename VARCHAR(65535)," +
+					`CREATE TABLE IF NOT EXISTS ${SYLLABUS_TABLE_NAME} (` +
+					"id INT NOT NULL AUTO_INCREMENT," +
+					"filename TEXT NULL," +
 					"course CHAR(7) NOT NULL," +
 					"professor_first VARCHAR(255) NOT NULL," +
 					"professor_last VARCHAR(255) NOT NULL," +
@@ -255,12 +260,15 @@ export default class SQLServer {
 					"days ENUM('MWF', 'TR', 'MW', 'Online') NOT NULL," +
 					"term ENUM('Spring', 'Summer', 'Fall') NOT NULL," +
 					"year INT NOT NULL," +
+					"PRIMARY KEY (id)" +
 					");";
 				con2.query(sql, err => {
 					if (err) {
 						rej(errToString(err));
 						return;
 					}
+					res();
+					return;
 				});
 			});
 
@@ -303,7 +311,12 @@ export default class SQLServer {
 			fields = [fields];
 		}
 		return Promise.all(fields.map(s => {
-			this._query(`DELETE FROM ${SYLLABUS_TABLE_NAME} WHERE ` + partialWhere(s) + ";");
+			try {
+				return this._query(`DELETE FROM ${SYLLABUS_TABLE_NAME} ` + partialWhere(s) + ";");
+			}
+			catch (e) {
+				return Promise.reject(errToString(e));
+			}
 		}));
 	}
 
@@ -319,7 +332,7 @@ export default class SQLServer {
 			fields = [fields];
 		}
 
-		const q = fields.map(s => Object.assign({filename: null}, s))
+		const q = fields.map(s => Object.assign({filename: null}, s));
 
 		return this._query(`INSERT INTO ${SYLLABUS_TABLE_NAME} (${SyllabusEntryKeys.join(",")}) VALUES ` + insertValues(q, SyllabusEntryKeys) + ";");
 	}
@@ -336,7 +349,12 @@ export default class SQLServer {
 			return Promise.reject("fields needs to be a partial SyllabusEntry object.");
 		}
 
-		return this._query(`SELECT ${SyllabusEntryKeys.join(",")} FROM ${SYLLABUS_TABLE_NAME} WHERE ` + partialWhere(fields) + ";");
+		try {
+			return this._query(`SELECT ${SyllabusEntryKeys.join(",")} FROM ${SYLLABUS_TABLE_NAME} ` + partialWhere(fields) + ";");
+		}
+		catch (e) {
+			return Promise.reject(errToString(e));
+		}
 	}
 
 	/**
@@ -345,6 +363,24 @@ export default class SQLServer {
 	 */
 	async end() {
 		return new Promise((resolve, reject) => {
+			this.con.end(err => {
+				if (err) {
+					reject(errToString(err));
+					return;
+				}
+				resolve();
+				return;
+			});
+		});
+	}
+
+	/**
+	 * Ends the connection to the SQL server and drops all data associated with syllabank.
+	 * @returns {Promise<void>}
+	 */
+	async nuke() {
+		return new Promise((resolve, reject) => {
+			this._query(`DROP DATABASE ${DB_NAME}`);
 			this.con.end(err => {
 				if (err) {
 					reject(errToString(err));
