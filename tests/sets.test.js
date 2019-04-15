@@ -27,7 +27,6 @@ describe("sets tests", () => {
 			{ a: "a", b: "x", c: 4, d: { a: 5, b: 6 } },
 			{ a: "a", b: "b", c: 4, d: { a: 5, b: 7 } },
 		];
-		const q = sets.dedupe(test1);
 		expect(sets.equivalent(sets.dedupe(test1), eq1)).toEqual(true);
 		expect(sets.equivalent(sets.dedupe(eq1), eq1)).toEqual(true);
 	});
