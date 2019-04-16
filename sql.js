@@ -339,7 +339,7 @@ export default class SQLServer {
 	 *
 	 * @returns {Promise<SQLServer>} A Promise that will contain a new SqlServer or an error (string) detailing what happened.
 	 */
-	static async create({ database = "DB_NAME", host = "localhost", password, port = 3306, user = "root" }) {
+	static async create({ database = DB_NAME, host = "localhost", password, port = 3306, user = "root" }) {
 		return new Promise(async (resolve, reject) => {
 			// connection without database (in case the db does not exist yet)
 			const con1 = mysql.createConnection({
