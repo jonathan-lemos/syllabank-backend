@@ -2,8 +2,8 @@ import deepEqual from "deep-equal";
 
 /**
  * Returns true if two arrays contain the same contents regardless of order.
- * @param {T[]} a 
- * @param {T[]} b 
+ * @param {any[]} a
+ * @param {any[]} b
  * @returns {boolean}
  */
 export function equivalent(a, b) {
@@ -29,8 +29,8 @@ export function equivalent(a, b) {
 
 /**
  * Removes duplicate entries in an array.
- * @param {T[]} arr 
- * @returns {T[]}
+ * @param {any[]} arr
+ * @returns {any[]}
  */
 export function dedupe(arr) {
 	let output = [];
@@ -50,15 +50,16 @@ export function dedupe(arr) {
 
 /**
  * Returns the intersection of two or more arrays.
- * @param  {...T[]} arg 
- * @returns {T[]}
+ * @param  {...any[]} arg
+ * @returns {any[]}
  */
 export function intersection(...arg) {
 	if (arg.length === 0) {
 		return [];
 	}
-	const q =  dedupe(arg[0]).filter(e => {
-		for (let i = 1; i < arg.length; ++i) {
+	let q = dedupe(arg[0]);
+	for (let i = 1; i < arg.length; ++i) {
+		q = q.filter(e => {
 			let found = false;
 			for (const f of arg[i]) {
 				if (deepEqual(e, f)) {
@@ -66,19 +67,16 @@ export function intersection(...arg) {
 					break;
 				}
 			}
-			if (!found) {
-				return false;
-			}
-			return true;
-		}
-	});
+			return found;
+		});
+	}
 	return q;
 }
 
 /**
  * Returns the union of two or more arrays.
- * @param  {...T[]} arg 
- * @returns {T[]}
+ * @param  {...any[]} arg
+ * @returns {any[]}
  */
 
 export function union(...arg) {
@@ -87,9 +85,9 @@ export function union(...arg) {
 
 /**
  * Returns the difference of two arrays.
- * @param {T[]} a 
- * @param {T[]} b 
- * @returns {a: T[], b: T[]}
+ * @param {any[]} a
+ * @param {any[]} b
+ * @returns {object} {a: any[], b: any[]}
  */
 export function diff(a, b) {
 	a = dedupe(a);

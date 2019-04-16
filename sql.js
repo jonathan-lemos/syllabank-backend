@@ -1,7 +1,7 @@
 import mysql from "mysql";
 
 const DB_NAME = "syllabank";
-const SYLLAVIEW = "syllaview";
+const SYLLAVIEW_VIEW = "syllaview";
 const SYLLABUS_TABLE = "syllabi";
 const PROFESSOR_TABLE = "professors";
 const COURSES_TABLE = "courses";
@@ -27,13 +27,27 @@ const errToString = e => {
 		return `Bad query ${e.sql}\n${e.sqlMessage}`;
 	}
 	if (e.message !== undefined) {
-		return e.message;
+		return e.toString();
 	}
 	return JSON.stringify(e);
 };
 
 /**
- * Returns true if a given object is a full SyllaView, meaning
+ * @typedef Syllaview
+ * @type {object}
+ * @property {string} filename?
+ * @property {string} course
+ * @property {string} first_name?
+ * @property {string} last_name?
+ * @property {string} time_begin
+ * @property {string} time_end
+ * @property {string} days
+ * @property {string} term
+ * @property {number} year
+ */
+
+/**
+ * Returns true if a given object is a full Syllaview, meaning
  * {
  *     filename?: string
  *     course: string
@@ -54,11 +68,11 @@ const isSyllaview = se => {
 		return false;
 	}
 
-	return (se["filename"] == undefined || typeof se["filename"] === "string") &&
+	return (se["filename"] == null || typeof se["filename"] === "string") &&
 	typeof se["course"] === "string" &&
 	(typeof se["first_name"] === "string" || typeof se["last_name"] === "string") &&
-	(typeof se["first_name"] === "string" || se["first_name"] === undefined) &&
-	(typeof se["last_name"] === "string" || se["last_name"] === undefined) &&
+	(typeof se["first_name"] === "string" || se["first_name"] == null) &&
+	(typeof se["last_name"] === "string" || se["last_name"] == null) &&
 	typeof se["time_begin"] === "string" &&
 	typeof se["time_end"] === "string" &&
 	typeof se["days"] === "string" &&
@@ -104,8 +118,8 @@ const isProfessorEntry = pe => {
 		return false;
 	}
 
-	return typeof pe["first"] === "string" &&
-	typeof pe["last"] === "string" &&
+	return typeof pe["first_name"] === "string" &&
+	typeof pe["last_name"] === "string" &&
 	typeof pe["n_number"] === "string";
 };
 
@@ -120,8 +134,8 @@ const isPartialProfessorEntry = se => {
 	}
 
 	return isProfessorEntry(Object.assign({
-		first: "",
-		last: "",
+		first_name: "",
+		last_name: "",
 		n_number: "",
 	}, Object.assign({}, se)));
 };
@@ -133,7 +147,7 @@ const isPartialProfessorEntry = se => {
  *     name: string
  *     description?: string
  * }
- * @param {any} ce 
+ * @param {any} pe
  * @returns {boolean}
  */
 const isCourseEntry = pe => {
@@ -141,7 +155,7 @@ const isCourseEntry = pe => {
 		return false;
 	}
 
-	return typeof pe["first"] === "string" &&
+	return typeof pe["course"] === "string" &&
 	typeof pe["name"] === "string" &&
 	(pe["description"] === undefined || typeof pe["description"] === "string");
 };
@@ -157,7 +171,7 @@ const isPartialCourseEntry = se => {
 	}
 
 	return isCourseEntry(Object.assign({
-		first: "",
+		course: "",
 		name: "",
 		description: "",
 	}, Object.assign({}, se)));
@@ -287,7 +301,6 @@ export default class SQLServer {
 						return;
 					}
 					res();
-					return;
 				});
 			});
 
@@ -298,32 +311,32 @@ export default class SQLServer {
 						return;
 					}
 					res();
-					return;
 				});
 			});
 
-			await connect(con1);
-			await execute(con1, `CREATE DATABASE IF NOT EXISTS ${DB_NAME};`);
-			con1.end();
-			await connect(con2);
+			try {
+				await connect(con1);
+				await execute(con1, `CREATE DATABASE IF NOT EXISTS ${DB_NAME};`);
+				con1.end();
+				await connect(con2);
 
-			await Promise.all(
-				execute(con2, `
+				await Promise.all([
+					execute(con2, `
 					CREATE TABLE IF NOT EXISTS ${PROFESSOR_TABLE} (
 						id INT AUTO_INCREMENT PRIMARY KEY,
 						first_name VARCHAR(255) NOT NULL,
 						last_name VARCHAR(255) NOT NULL,
-						n_number CHAR(9) NOT NULL,
+						n_number CHAR(9) NOT NULL
 					);
 				`),
-				execute(con2, `
+					execute(con2, `
 					CREATE TABLE IF NOT EXISTS ${COURSES_TABLE} (
 						course CHAR(7) PRIMARY KEY,
 						name VARCHAR(255) NOT NULL,
-						description VARCHAR(4096) NULL,
+						description VARCHAR(4096) NULL
 					);
 				`),
-				execute(con2, `
+					execute(con2, `
  					CREATE TABLE IF NOT EXISTS ${SYLLABUS_TABLE} (
 						id INT AUTO_INCREMENT PRIMARY KEY,
 						filename TEXT NULL,
@@ -338,121 +351,26 @@ export default class SQLServer {
 						FOREIGN KEY (course) REFERENCES ${COURSES_TABLE}(course)
 					); 
 				`),
-				execute(con2, `
-					CREATE OR REPLACE VIEW ${SYLLAVIEW} AS
-					SELECT S.filename, S.course, P.first_name, P.last_name, P.nnumber, S.time_begin, S.time_end, S.days, S.term, S.year
-					FROM ${SYLLABUS_TABLE} S, ${PROFESSOR_TABLE} P, ${COURSES_TABLE} T
+					execute(con2, `
+					CREATE OR REPLACE VIEW ${SYLLAVIEW_VIEW} AS
+					SELECT S.filename, S.course, P.first_name, P.last_name, S.time_begin, S.time_end, S.days, S.term, S.year
+					FROM ${SYLLABUS_TABLE} S, ${PROFESSOR_TABLE} P
 					WHERE S.professor = P.id;
 				`),
-			);
-
-
-			// connects to the sql server with no database selected
-			const iConnect = () => new Promise((res, rej) => {
-				con1.connect(err => {
-					if (err) {
-						rej(errToString(err));
-						return;
-					}
-					res();
-					return;
-				});
-			});
-
-			// creates the database if it doesn't exist
-			const iCreateDb = () => new Promise((res, rej) => {
-				con1.query(`CREATE DATABASE IF NOT EXISTS ${DB_NAME};`, err => {
-					if (err) {
-						rej(errToString(err));
-						return;
-					}
-					res();
-					return;
-				});
-			});
-
-			// connects to the newly made database
-			const iReconnect = () => new Promise((res, rej) => {
-				con2.connect(err => {
-					if (err) {
-						rej(errToString(err));
-						return;
-					}
-					res();
-					return;
-				});
-			});
-
-			// creates the tables
-			const iCreateTables = () => new Promise((res, rej) => {
-				const sql1 =
-					`
-					CREATE TABLE IF NOT EXISTS ${PROFESSOR_TABLE} (
-						id INT AUTO_INCREMENT PRIMARY KEY,
-						first_name VARCHAR(255) NOT NULL,
-						last_name VARCHAR(255) NOT NULL,
-						n_number CHAR(9) NOT NULL,
-					);
-					`;
-				const sql2 = `
-					CREATE TABLE IF NOT EXISTS ${COURSES_TABLE} (
-						course CHAR(7) PRIMARY KEY,
-						name VARCHAR(255) NOT NULL,
-						description VARCHAR(4096) NULL,
-					);
-					`;
-				const sql3 = `	
-					CREATE TABLE IF NOT EXISTS ${SYLLABUS_TABLE} (
-						id INT AUTO_INCREMENT PRIMARY KEY,
-						filename TEXT NULL,
-						course CHAR(7) NOT NULL,
-						professor INT NOT NULL,
-						time_begin TIME NOT NULL,
-						time_end TIME NOT NULL,
-						days ENUM('MWF', 'TR', 'MW', 'Online') NOT NULL,
-						term ENUM('Spring', 'Summer', 'Fall') NOT NULL,
-						year INT NOT NULL,
-						FOREIGN KEY (professor) REFERENCES ${PROFESSOR_TABLE}(id),
-						FOREIGN KEY (course) REFERENCES ${COURSES_TABLE}(course)
-					);
-					`;
-				const sql4 = `	
-					CREATE OR REPLACE VIEW ${SYLLAVIEW} AS
-					SELECT S.filename, S.course, P.first_name, P.last_name, P.nnumber, S.time_begin, S.time_end, S.days, S.term, S.year
-					FROM ${SYLLABUS_TABLE} S, ${PROFESSOR_TABLE} P, ${COURSES_TABLE} T
-					WHERE S.professor = P.id;
-					`;
-				con2.query(sql1, err => {
-					if (err) {
-						rej(errToString(err));
-						return;
-					}
-					res();
-					return;
-				});
-			});
-
-			try {
-				await iConnect();
-				await iCreateDb();
-				con1.end();
-				await iReconnect();
-				await iCreateTable();
+				]);
 			}
 			catch (e) {
-				reject(errToString(e));
-				return;
+				reject(e);
 			}
 
 			resolve(new SQLServer(con2, DB_NAME));
-			return;
 		});
 	}
 
 	/**
 	 * Private constructor. Do not use.
 	 * Instead, use SQLServer.create() to create a server
-	 * @param {mysql.Connection} con    MySQL.Connection created from SQLServer.create()
+	 * @param {mysql.connection} con    MySQL.Connection created from SQLServer.create()
 	 * @param {string}           dbName The name of the database to connect to.
 	 */
 	constructor(con, dbName) {
@@ -475,7 +393,11 @@ export default class SQLServer {
 		const b = fields.filter(s => isProfessorEntry(s));
 		const c = fields.filter(s => isSyllaview(s));
 
-		return Promise.all(this.insertCourses(a), this.insertProfessors(b), this.insertSyllaviews(c));
+		if (a.length + b.length + c.length != fields.length) {
+			return Promise.reject("Some of the given fields were not of a Course, Professor, or Syllaview type");
+		}
+
+		return Promise.all([this.insertCourses(a), this.insertProfessors(b), this.insertSyllaviews(c)]);
 	}
 
 	/**
@@ -486,6 +408,10 @@ export default class SQLServer {
 	async insertCourses(fields) {
 		if (!Array.isArray(fields)) {
 			fields = [fields];
+		}
+
+		if (fields.length === 0) {
+			return;
 		}
 
 		const q = fields.map(s => {
@@ -500,7 +426,7 @@ export default class SQLServer {
 			];
 		});
 
-		return this._query(`INSERT INTO ${COURSES_TABLE} VALUES ? ON DUPLICATE KEY UPDATE course=course;`, q);
+		return this._query(`INSERT INTO ${COURSES_TABLE} VALUES ? ON DUPLICATE KEY UPDATE course=course;`, [q]);
 	}
 
 	/**
@@ -511,6 +437,10 @@ export default class SQLServer {
 	async insertProfessors(fields) {
 		if (!Array.isArray(fields)) {
 			fields = [fields];
+		}
+
+		if (fields.length === 0) {
+			return;
 		}
 
 		const q = fields.map(s => {
@@ -525,7 +455,7 @@ export default class SQLServer {
 			];
 		});
 
-		return this._query(`INSERT INTO ${PROFESSOR_TABLE} (first_name, last_name, n_number) VALUES ? ON DUPLICATE KEY UPDATE id=id;`, q);
+		return this._query(`INSERT INTO ${PROFESSOR_TABLE} (first_name, last_name, n_number) VALUES ? ON DUPLICATE KEY UPDATE id=id;`, [q]);
 	}
 
 	/**
@@ -554,7 +484,7 @@ export default class SQLServer {
 			}
 			else {
 				last = mysql.escape(last);
-				const res = await this._query(`SELECT id FROM ${PROFESSOR_TABLE} WHERE first_name=${first};`);
+				const res = await this._query(`SELECT id FROM ${PROFESSOR_TABLE} WHERE last_name=${last};`);
 				const ids = res.map(s => s["id"]);
 				return ids;
 			}
@@ -562,6 +492,10 @@ export default class SQLServer {
 
 		if (!Array.isArray(fields)) {
 			fields = [fields];
+		}
+
+		if (fields.length === 0) {
+			return;
 		}
 
 		const q = await Promise.all(fields.map(async s => {
@@ -577,7 +511,7 @@ export default class SQLServer {
 			return [
 				s.filename,
 				s.course,
-				profToId({ first: s.first_name, last: s.last_name })[0],
+				ids[0],
 				s.time_begin,
 				s.time_end,
 				s.days,
@@ -589,7 +523,7 @@ export default class SQLServer {
 
 		const keys = ["filename", "course", "professor", "time_begin", "time_end", "days", "term", "year"];
 
-		return this._query(`INSERT INTO ${SYLLABUS_TABLE} (${keys.join(",")}) VALUES ? ON DUPLICATE KEY UPDATE id=id;`, q);
+		return this._query(`INSERT INTO ${SYLLABUS_TABLE} (${keys.join(",")}) VALUES ? ON DUPLICATE KEY UPDATE id=id;`, [q]);
 	}
 
 	/**
@@ -626,7 +560,7 @@ export default class SQLServer {
 			return Promise.reject("fields needs to be a partial SyllabusEntry object.");
 		}
 
-		return this._query(`SELECT * FROM ${SYLLAVIEW} ${partialWhere(fields)};`);
+		return this._query(`SELECT * FROM ${SYLLAVIEW_VIEW} ${partialWhere(fields)};`);
 	}
 
 	/**
