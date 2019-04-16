@@ -5,6 +5,7 @@ const SYLLAVIEW_VIEW = "syllaview";
 const SYLLABUS_TABLE = "syllabi";
 const PROFESSOR_TABLE = "professors";
 const COURSES_TABLE = "courses";
+const FILENAME_TABLE = "filenames";
 
 /**
  * Converts an error to a string.
@@ -104,10 +105,18 @@ const isPartialSyllaview = se => {
 };
 
 /**
+ * @typedef ProfessorEntry
+ * @type {object}
+ * @property {string} first_name
+ * @property {string} last_name
+ * @property {string} n_number
+ */
+
+/**
  * Returns true if a given object is a full ProfessorEntry, meaning
  * {
- *     first: string
- *     last: string
+ *     first_name: string
+ *     last_name: string
  *     n_number: string
  * }
  * @param {any} pe 
@@ -141,7 +150,15 @@ const isPartialProfessorEntry = se => {
 };
 
 /**
- * Returns true if a given object is a full ProfessorEntry, meaning
+ * @typedef CourseEntry
+ * @type {object}
+ * @property {string} course
+ * @property {string} name
+ * @property {string} description?
+ */
+
+/**
+ * Returns true if a given object is a full CourseEntry, meaning
  * {
  *     course: string
  *     name: string
@@ -208,32 +225,74 @@ const partialWhere = se => {
  * Class for interfacing with the backend MySQL server.
  *
  * Schema:
- * -------------------------------------------------------------------------------------------------------------------------------
- * |                                                 ${SYLLABUS_TABLE}                                                      |
- * |-----------------------------------------------------------------------------------------------------------------------------|
- * |     name        |              type                 |          flags             |               description                |
- * |-----------------|-----------------------------------|----------------------------|------------------------------------------|
- * | id              | INT                               | AUTO_INCREMENT PRIMARY KEY | Integer primary key for fast indexing.   |
- * | filename        | VARCHAR(65535)                    | NULL                       | Filename.                                |
- * | course          | CHAR(7)                           | NOT NULL                   | Course code of professor.                |
- * | professor       | INT                               | FOREIGN KEY                | Professor. References professor table id |
- * | time_begin      | TIME                              | NOT NULL                   | Start time of class.                     |
- * | time_end        | TIME                              | NOT NULL                   | End time of class.                       |
- * | days            | ENUM('MWF', 'TR', 'MW', 'Online') | NOT NULL                   | The days the class takes place on.       |
- * | term            | ENUM('Spring', 'Summer', 'Fall')  | NOT NULL                   | The time of year a class takes place in. |
- * | year            | INT                               | NOT NULL                   | The year a class takes place in.         |
- * -------------------------------------------------------------------------------------------------------------------------------
- * 
- * -----------------------------------------------------------------------------------------------------
- * |                                    ${PROFESSOR_TABLE}                                        |
- * |---------------------------------------------------------------------------------------------------|
- * |    name    |    type      |          flags             |               description                |
- * |------------|--------------|----------------------------|------------------------------------------|
- * | id         | INT          | AUTO_INCREMENT PRIMARY KEY | Integer primary key for fast indexing.   |
- * | first_name | VARCHAR(255) | NOT NULL                   | First name of professor.                 |
- * | last_name  | VARCHAR(255) | NOT NULL                   | Last name of professor.                  |
- * | n_number   | CHAR(9)      | NOT NULL                   | Professor N-Number.                      |
- * ---------------------------------------------------------------------------------------------------
+ * ------------------------------------------------------------------------------------------------------------------------------------------------
+ * |                                                            ${SYLLABUS_TABLE}                                                                 |
+ * |----------------------------------------------------------------------------------------------------------------------------------------------|
+ * |     name        |              type                 |          flags             |                        description                        |
+ * |-----------------|-----------------------------------|----------------------------|-----------------------------------------------------------|
+ * | id              | INT                               | AUTO_INCREMENT PRIMARY KEY | Integer primary key for fast indexing.                    |
+ * | file            | INT                               | NULL FOREIGN KEY           | References filename table.                                |
+ * | course          | CHAR(7)                           | NOT NULL FOREIGN KEY       | Course code of professor. References course table course. |
+ * | professor       | INT                               | NOT NULL FOREIGN KEY       | Professor. References professor table id.                 |
+ * | time_begin      | TIME                              | NOT NULL                   | Start time of class. Format HH:MM:SS.                     |
+ * | time_end        | TIME                              | NOT NULL                   | End time of class. Format HH:MM:SS.                       |
+ * | days            | ENUM('MWF', 'TR', 'MW', 'Online') | NOT NULL                   | The days the class takes place on.                        |
+ * | term            | ENUM('Spring', 'Summer', 'Fall')  | NOT NULL                   | The time of year a class takes place in.                  |
+ * | year            | INT                               | NOT NULL                   | The year a class takes place in.                          |
+ * ------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ * ------------------------------------------------------------------------------------------------------------------------------------------------
+ * |                                                            ${FILENAME_TABLE}                                                                 |
+ * |----------------------------------------------------------------------------------------------------------------------------------------------|
+ * |     name        |              type                 |          flags             |                        description                        |
+ * |-----------------|-----------------------------------|----------------------------|-----------------------------------------------------------|
+ * | id              | INT                               | AUTO_INCREMENT PRIMARY KEY | Integer primary key for fast indexing.                    |
+ * | filename        | TEXT                              | NULL                       | Filename.                                                 |
+ * | course          | CHAR(7)                           | FOREIGN KEY                | Course code of professor. References course table course. |
+ * | professor       | INT                               | FOREIGN KEY                | Professor. References professor table id.                 |
+ * | time_begin      | TIME                              | NOT NULL                   | Start time of class. Format HH:MM:SS.                     |
+ * | time_end        | TIME                              | NOT NULL                   | End time of class. Format HH:MM:SS.                       |
+ * | days            | ENUM('MWF', 'TR', 'MW', 'Online') | NOT NULL                   | The days the class takes place on.                        |
+ * | term            | ENUM('Spring', 'Summer', 'Fall')  | NOT NULL                   | The time of year a class takes place in.                  |
+ * | year            | INT                               | NOT NULL                   | The year a class takes place in.                          |
+ * ------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ * ------------------------------------------------------------------------------------------------------------------------------------------------
+ * |                                                            ${PROFESSOR_TABLE}                                                                |
+ * |----------------------------------------------------------------------------------------------------------------------------------------------|
+ * |    name         |              type                 |          flags             |                        description                        |
+ * |-----------------|-----------------------------------|----------------------------|-----------------------------------------------------------|
+ * | id              | INT                               | AUTO_INCREMENT PRIMARY KEY | Integer primary key for fast indexing.                    |
+ * | first_name      | VARCHAR(255)                      | NOT NULL                   | First name of professor.                                  |
+ * | last_name       | VARCHAR(255)                      | NOT NULL                   | Last name of professor.                                   |
+ * | n_number        | CHAR(9)                           | NOT NULL                   | Professor N-Number.                                       |
+ * ------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ * ------------------------------------------------------------------------------------------------------------------------------------------------
+ * |                                                            ${COURSES_TABLE}                                                                  |
+ * |----------------------------------------------------------------------------------------------------------------------------------------------|
+ * |    name         |              type                 |          flags             |                        description                        |
+ * |-----------------|-----------------------------------|----------------------------|-----------------------------------------------------------|
+ * | course          | CHAR(7)                           | PRIMARY KEY                | Course code (e.g. COT3100)                                |
+ * | name            | VARCHAR(255)                      | NOT NULL                   | Name of course (e.g. Computational Structures)            |
+ * | description     | TEXT                              | NULL                       | Description of course                                     |
+ * ------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ * ------------------------------------------------------------------------------------------------------------------------------------------------
+ * |                                                            ${SYLLAVIEW_VIEW}                                                                 |
+ * |----------------------------------------------------------------------------------------------------------------------------------------------|
+ * |     name        |              type                 |          flags             |                        description                        |
+ * |-----------------|-----------------------------------|----------------------------|-----------------------------------------------------------|
+ * | filename        | TEXT                              | NULL                       | Filename.                                                 |
+ * | course_code     | CHAR(7)                           | FOREIGN KEY                | Course code of professor. References course table course. |
+ * | professor_first | VARCHAR(255)                      | NOT NULL                   | First name of professor.                                  |
+ * | professor_last  | VARCHAR(255)                      | NOT NULL                   | Last name of professor.                                   |
+ * | time_begin      | TIME                              | NOT NULL                   | Start time of class. Format HH:MM:SS.                     |
+ * | time_end        | TIME                              | NOT NULL                   | End time of class. Format HH:MM:SS.                       |
+ * | days            | ENUM('MWF', 'TR', 'MW', 'Online') | NOT NULL                   | The days the class takes place on.                        |
+ * | term            | ENUM('Spring', 'Summer', 'Fall')  | NOT NULL                   | The time of year a class takes place in.                  |
+ * | year            | INT                               | NOT NULL                   | The year a class takes place in.                          |
+ * ------------------------------------------------------------------------------------------------------------------------------------------------
  */
 export default class SQLServer {
 
@@ -243,9 +302,13 @@ export default class SQLServer {
 	 * If successful, it returns a JSON array describing the query.
 	 * On failure, it returns a string detailing the error.
 	 * @param {string} query          The query to execute
-	 * @param {Array}  preparedParams Any prepared parameters to put in.
+	 * @param {Array | undefined}  preparedParams Any prepared parameters to put in.
 	 */
-	async _query(query, preparedParams) {
+	async _query(query, preparedParams = undefined) {
+		if (typeof query !== "string") {
+			throw new Error("query must be a string");
+		}
+
 		return new Promise((resolve, reject) => {
 			const cb = (err, results) => {
 				if (err) {
@@ -268,6 +331,7 @@ export default class SQLServer {
 	 * Creates an SqlServer instance.
 	 * This is the only way to initialize an SqlServer, as constructors cannot be used for asynchronous code.
 	 *
+	 * @param {string} database The database to connect to. By default this is DB_NAME.
 	 * @param {string} host     The host to connect to. By default this is "localhost"
 	 * @param {string} password The password of the user account to connect to.
 	 * @param {number} port     The port to connect to. By default this is 3306.
@@ -275,7 +339,7 @@ export default class SQLServer {
 	 *
 	 * @returns {Promise<SQLServer>} A Promise that will contain a new SqlServer or an error (string) detailing what happened.
 	 */
-	static async create({ host = "localhost", password, port = 3306, user = "root" }) {
+	static async create({ database = "DB_NAME", host = "localhost", password, port = 3306, user = "root" }) {
 		return new Promise(async (resolve, reject) => {
 			// connection without database (in case the db does not exist yet)
 			const con1 = mysql.createConnection({
@@ -287,7 +351,7 @@ export default class SQLServer {
 
 			// connection with database
 			const con2 = mysql.createConnection({
-				database: DB_NAME,
+				database,
 				host,
 				password,
 				port,
@@ -322,41 +386,47 @@ export default class SQLServer {
 
 				await Promise.all([
 					execute(con2, `
-					CREATE TABLE IF NOT EXISTS ${PROFESSOR_TABLE} (
-						id INT AUTO_INCREMENT PRIMARY KEY,
-						first_name VARCHAR(255) NOT NULL,
-						last_name VARCHAR(255) NOT NULL,
-						n_number CHAR(9) NOT NULL
-					);
-				`),
+						CREATE TABLE IF NOT EXISTS ${PROFESSOR_TABLE} (
+							id INT AUTO_INCREMENT PRIMARY KEY,
+							first_name VARCHAR(255) NOT NULL,
+							last_name VARCHAR(255) NOT NULL,
+							n_number CHAR(9) NOT NULL
+						);
+					`),
 					execute(con2, `
-					CREATE TABLE IF NOT EXISTS ${COURSES_TABLE} (
-						course CHAR(7) PRIMARY KEY,
-						name VARCHAR(255) NOT NULL,
-						description VARCHAR(4096) NULL
-					);
-				`),
+						CREATE TABLE IF NOT EXISTS ${COURSES_TABLE} (
+							course CHAR(7) PRIMARY KEY,
+							name VARCHAR(255) NOT NULL,
+							description TEXT NULL
+						);
+					`),
 					execute(con2, `
- 					CREATE TABLE IF NOT EXISTS ${SYLLABUS_TABLE} (
-						id INT AUTO_INCREMENT PRIMARY KEY,
-						filename TEXT NULL,
-						course CHAR(7) NOT NULL,
-						professor INT NOT NULL,
-						time_begin TIME NOT NULL,
-						time_end TIME NOT NULL,
-						days ENUM('MWF', 'TR', 'MW', 'Online') NOT NULL,
-						term ENUM('Spring', 'Summer', 'Fall') NOT NULL,
-						year INT NOT NULL,
-						FOREIGN KEY (professor) REFERENCES ${PROFESSOR_TABLE}(id),
-						FOREIGN KEY (course) REFERENCES ${COURSES_TABLE}(course)
-					); 
-				`),
+						CREATE TABLE IF NOT EXISTS ${FILENAME_TABLE} (
+							id INT AUTO_INCREMENT PRIMARY KEY,
+							filename TEXT NOT NULL
+						);
+					`),
 					execute(con2, `
-					CREATE OR REPLACE VIEW ${SYLLAVIEW_VIEW} AS
-					SELECT S.filename, S.course, P.first_name, P.last_name, S.time_begin, S.time_end, S.days, S.term, S.year
-					FROM ${SYLLABUS_TABLE} S, ${PROFESSOR_TABLE} P
-					WHERE S.professor = P.id;
-				`),
+ 						CREATE TABLE IF NOT EXISTS ${SYLLABUS_TABLE} (
+							id INT AUTO_INCREMENT PRIMARY KEY,
+							filename TEXT NULL,
+							course CHAR(7) NOT NULL,
+							professor INT NOT NULL,
+							time_begin TIME NOT NULL,
+							time_end TIME NOT NULL,
+							days ENUM('MWF', 'TR', 'MW', 'Online') NOT NULL,
+							term ENUM('Spring', 'Summer', 'Fall') NOT NULL,
+							year INT NOT NULL,
+							FOREIGN KEY (professor) REFERENCES ${PROFESSOR_TABLE}(id),
+							FOREIGN KEY (course) REFERENCES ${COURSES_TABLE}(course)
+						); 
+					`),
+					execute(con2, `
+						CREATE OR REPLACE VIEW ${SYLLAVIEW_VIEW} AS
+						SELECT S.filename, S.course, P.first_name, P.last_name, S.time_begin, S.time_end, S.days, S.term, S.year
+						FROM ${SYLLABUS_TABLE} S, ${PROFESSOR_TABLE} P
+						WHERE S.professor = P.id;
+					`),
 				]);
 			}
 			catch (e) {
@@ -370,7 +440,7 @@ export default class SQLServer {
 	/**
 	 * Private constructor. Do not use.
 	 * Instead, use SQLServer.create() to create a server
-	 * @param {mysql.connection} con    MySQL.Connection created from SQLServer.create()
+	 * @param {Connection} con    MySQL.Connection created from SQLServer.create()
 	 * @param {string}           dbName The name of the database to connect to.
 	 */
 	constructor(con, dbName) {
@@ -393,7 +463,7 @@ export default class SQLServer {
 		const b = fields.filter(s => isProfessorEntry(s));
 		const c = fields.filter(s => isSyllaview(s));
 
-		if (a.length + b.length + c.length != fields.length) {
+		if (a.length + b.length + c.length !== fields.length) {
 			return Promise.reject("Some of the given fields were not of a Course, Professor, or Syllaview type");
 		}
 
@@ -459,9 +529,9 @@ export default class SQLServer {
 	}
 
 	/**
-	 * Inserts a SyllaView into the table.
-	 * All the columns of the SyllaView except the filename and first OR last name must be specified.
-	 * @param {SyllabusEntry[] | SyllabusEntry} fields An array or a single SyllabusEntry
+	 * Inserts a Syllaview into the table.
+	 * All the columns of the Syllaview except the filename and first OR last name must be specified.
+	 * @param {Syllaview[] | Syllaview} fields An array or a single SyllabusEntry
 	 * @returns {Promise<void>}
 	 */
 	async insertSyllaviews(fields) {
@@ -473,20 +543,17 @@ export default class SQLServer {
 				first = mysql.escape(first);
 				last = mysql.escape(last);
 				const res = await this._query(`SELECT id FROM ${PROFESSOR_TABLE} WHERE first_name=${first} AND last_name=${last};`);
-				const ids = res.map(s => s["id"]);
-				return ids;
+				return res.map(s => s["id"]);
 			}
 			if (typeof first === "string") {
 				first = mysql.escape(first);
 				const res = await this._query(`SELECT id FROM ${PROFESSOR_TABLE} WHERE first_name=${first};`);
-				const ids = res.map(s => s["id"]);
-				return ids;
+				return res.map(s => s["id"]);
 			}
 			else {
 				last = mysql.escape(last);
 				const res = await this._query(`SELECT id FROM ${PROFESSOR_TABLE} WHERE last_name=${last};`);
-				const ids = res.map(s => s["id"]);
-				return ids;
+				return res.map(s => s["id"]);
 			}
 		};
 
@@ -528,11 +595,11 @@ export default class SQLServer {
 
 	/**
 	 * Selects from the database.
-	 * @param {Partial<SyllabusEntry>} fields An object containing the fields to select.
+	 * @param {Partial<Syllaview> | Partial<ProfessorEntry> | Partial<CourseEntry>} fields An object containing the fields to select.
 	 * For example, { course: "COT3210", professor_last: "Asai" } returns all rows where course = 'COT3210' AND professor_last = 'Asai'
-	 * An empty object selects all the fields from the database.
+	 * An empty object selects all the fields from the syllabus table.
 	 * See the table above for a list of fields.
-	 * @returns {Promise<SyllabusEntry[]>}
+	 * @returns {Promise<Syllaview[]> | Promise<ProfessorEntry[]> | Promise<CourseEntry[]>}
 	 */
 	async select(fields) {
 		if (isPartialSyllaview(fields)) {
@@ -548,12 +615,12 @@ export default class SQLServer {
 	}
 
 	/**
-	 * Selects syllabus entries from the database.
-	 * @param {Partial<SyllabusEntry>} fields An object containing the fields to select.
+	 * Selects from the syllabus table.
+	 * @param {Partial<Syllaview>} fields An object containing the fields to select.
 	 * For example, { course: "COT3210", professor_last: "Asai" } returns all rows where course = 'COT3210' AND professor_last = 'Asai'
 	 * An empty object selects all the entries from the table.
 	 * See the table above for a list of fields.
-	 * @returns {Promise<SyllabusEntry[]>}
+	 * @returns {Promise<Syllaview[]>}
 	 */
 	async selectSyllaviews(fields) {
 		if (!isPartialSyllaview(fields)) {
@@ -564,7 +631,7 @@ export default class SQLServer {
 	}
 
 	/**
-	 * Selects syllabus entries from the database.
+	 * Selects from the professors table.
 	 * @param {Partial<ProfessorEntry>} fields An object containing the fields to select.
 	 * For example, { course: "COT3210", professor_last: "Asai" } returns all rows where course = 'COT3210' AND professor_last = 'Asai'
 	 * An empty object selects all the fields from the database.
@@ -580,12 +647,12 @@ export default class SQLServer {
 	}
 
 	/**
-	 * Selects from the database.
-	 * @param {Partial<SyllabusEntry>} fields An object containing the fields to select.
+	 * Selects from the course table.
+	 * @param {Partial<CourseEntry>} fields An object containing the fields to select.
 	 * For example, { course: "COT3210", professor_last: "Asai" } returns all rows where course = 'COT3210' AND professor_last = 'Asai'
 	 * An empty object selects all the fields from the database.
 	 * See the table above for a list of fields.
-	 * @returns {Promise<SyllabusEntry[]>}
+	 * @returns {Promise<CourseEntry[]>}
 	 */
 	async selectCourses(fields) {
 		if (!isPartialCourseEntry(fields)) {
@@ -608,7 +675,6 @@ export default class SQLServer {
 					return;
 				}
 				resolve();
-				return;
 			});
 		});
 	}
@@ -618,15 +684,19 @@ export default class SQLServer {
 	 * @returns {Promise<void>}
 	 */
 	async nuke() {
-		return new Promise((resolve, reject) => {
-			this._query(`DROP DATABASE ${DB_NAME}`);
+		return new Promise(async (resolve, reject) => {
+			try {
+				await this._query(`DROP DATABASE ${this.dbName}`);
+			}
+			catch (e) {
+				reject(errToString(e));
+			}
 			this.con.end(err => {
 				if (err) {
 					reject(errToString(err));
 					return;
 				}
 				resolve();
-				return;
 			});
 		});
 	}

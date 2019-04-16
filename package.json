@@ -12,6 +12,7 @@
     "@babel/core": "^7.4.3",
     "@babel/preset-env": "^7.4.3",
     "deep-equal": "^1.0.1",
+    "dotenv": "^7.0.0",
     "eslint": "^5.16.0",
     "esm": "^3.2.22",
     "express": "^4.16.4",
