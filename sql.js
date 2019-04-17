@@ -494,7 +494,7 @@ export default class SQLServer {
 					execute(con2, `
 						CREATE TABLE IF NOT EXISTS ${FILENAME_TABLE} (
 							file_id INT AUTO_INCREMENT PRIMARY KEY,
-							filename TEXT NOT NULL
+							filename VARCHAR(255) NOT NULL UNIQUE
 						);
 					`),
 					execute(con2, `
@@ -510,7 +510,8 @@ export default class SQLServer {
 							year INT NOT NULL,
 							FOREIGN KEY (file_id) REFERENCES ${FILENAME_TABLE}(file_id),
 							FOREIGN KEY (professor) REFERENCES ${PROFESSOR_TABLE}(id),
-							FOREIGN KEY (course) REFERENCES ${COURSES_TABLE}(course)
+							FOREIGN KEY (course) REFERENCES ${COURSES_TABLE}(course),
+							UNIQUE(course, professor, time_begin, term, year)
 						); 
 					`),
 					execute(con2, `
@@ -561,7 +562,7 @@ export default class SQLServer {
 			return [s.filename];
 		});
 
-		return this._query(`INSERT INTO ${FILENAME_TABLE} (filename) VALUES ?`, [q]);
+		return this._query(`INSERT INTO ${FILENAME_TABLE} (filename) VALUES ? ON DUPLICATE KEY UPDATE file_id=file_id;`, [q]);
 	}
 
 	/**

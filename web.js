@@ -6,16 +6,20 @@ export default class WebServer {
 		res.status(400).send(msg);
 	}
 
-	constructor(sqlcon, port = 80, baseDir = path.join(__dirname, "/site"), defaultFile = "index.html") {
+	constructor(sqlcon, {port = 80, baseSiteDir = path.join(__dirname, "/site"), homepage = "index.html", basePdfDir = path.join(__dirname, "/pdfs")}) {
 		if (typeof port !== "number") {
 			throw new Error("Port must be a number");
 		}
 
-		if (typeof baseDir !== "string") {
+		if (typeof baseSiteDir !== "string") {
 			throw new Error("baseDir must be a string");
 		}
 
-		if (typeof defaultFile !== "string") {
+		if (typeof homepage !== "string") {
+			throw new Error("defaultFile must be a string");
+		}
+
+		if (typeof basePdfDir !== "string") {
 			throw new Error("defaultFile must be a string");
 		}
 
@@ -23,8 +27,8 @@ export default class WebServer {
 		this.con = sqlcon;
 		this.port = port;
 		this.web = express();
-		this.web.use(express.static(baseDir));
-		this.web.get("/", (req, res) => res.sendFile(path.join(baseDir, defaultFile)));
+		this.web.use(express.static(baseSiteDir));
+		this.web.get("/", (req, res) => res.sendFile(path.join(baseSiteDir, homepage)));
 
 		this.web.get("/api/selectSylabi", async (req, res) => {
 			try {
@@ -64,7 +68,7 @@ export default class WebServer {
 					WebServer._senderror(`No file with id ${req.params.id} exists`);
 					return;
 				}
-				res.download(r[0].filename, "download.pdf");
+				res.download(path.join(basePdfDir, r[0].filename), "download.pdf");
 			}
 			catch (e) {
 				WebServer._senderror(res, e);

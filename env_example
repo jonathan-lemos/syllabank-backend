@@ -1,7 +1,24 @@
 # Optionally create a .env file based on these options
+
+# If this is set, inserts the courses in the given csv file
+COURSE_CSV=csvs/courses.csv
+# If this is set, inserts the professors in the given professor csv file
+PROFESSOR_CSV=csvs/professors.csv
+# If this is set, inserts the filenames in the given filename csv file
+FILENAME_CSV=csvs/filenames.csv
+# If this is set, inserts the syllabi in the given syllabi csv file
+SYLLABI_CSV=csvs/syllabi.csv
+# The host the MySQL server is on
 DB_HOST=localhost
+# The name of the database to populate
 DB_NAME=syllabank
+# The MySQL user
 DB_USER=root
+# The MySQL password
 DB_PASSWORD=root
+# The MySQL port
 DB_PORT=3306
+# The port to host the website on
 WEB_PORT=3000
+# The directory the pdfs can be located in
+WEB_PDF_DIR=pdfs
