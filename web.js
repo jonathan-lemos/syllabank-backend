@@ -57,15 +57,43 @@ export default class WebServer {
 			}
 		});
 
+		this.web.get("/api/searchCourses/:name", async (req, res) => {
+			if (req.params.name === undefined) {
+				WebServer._senderror(res, "Route param name must be given");
+				return;
+			}
+
+			try {
+				res.json(await this.con.searchCourses(req.params.name));
+			}
+			catch (e) {
+				WebServer._senderror(res, e);
+			}
+		});
+
+		this.web.get("/api/searchProfessors/:name", async (req, res) => {
+			if (req.params.name === undefined) {
+				WebServer._senderror(res, "Route param name must be given");
+				return;
+			}
+
+			try {
+				res.json(await this.con.searchProfessors(req.params.name));
+			}
+			catch (e) {
+				WebServer._senderror(res, e);
+			}
+		});
+
 		this.web.get("/api/sendFile/:id", async (req, res) => {
 			if (req.params.id === undefined) {
-				WebServer._senderror("Route param id must be given");
+				WebServer._senderror(res, "Route param id must be given");
 				return;
 			}
 			try {
 				const r = await this.con.selectFiles({file_id: req.params.id});
 				if (r.length === 0) {
-					WebServer._senderror(`No file with id ${req.params.id} exists`);
+					WebServer._senderror(res, `No file with id ${req.params.id} exists`);
 					return;
 				}
 				res.download(path.join(basePdfDir, r[0].filename), "download.pdf");

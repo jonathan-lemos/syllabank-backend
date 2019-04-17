@@ -765,6 +765,24 @@ export default class SQLServer {
 		return this._query(`SELECT * FROM ${COURSES_TABLE} ${partialWhere(fields)};`);
 	}
 
+	async searchCourses(name) {
+		if (typeof name !== "string") {
+			return Promise.reject("name must be a string");
+		}
+		name = mysql.escape(name + "%");
+
+		return this._query(`SELECT * FROM ${COURSES_TABLE} WHERE course LIKE ${name} or name LIKE ${name} ORDER BY course ASC LIMIT 10;`);
+	}
+
+	async searchProfessors(name) {
+		if (typeof name !== "string") {
+			return Promise.reject("name must be a string");
+		}
+		name = mysql.escape(name + "%");
+
+		return this._query(`SELECT * FROM ${PROFESSOR_TABLE} WHERE first_name LIKE ${name} OR last_name LIKE ${name} ORDER BY last_name ASC LIMIT 10;`);
+	}
+
 
 	/**
 	 * Ends the connection to the SQL server.
