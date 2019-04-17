@@ -58,9 +58,9 @@ const vars = {
 const main = async () => {
 	const con = await SQLServer.create({database: vars.DB_NAME, user: vars.DB_USER, password: vars.DB_PASSWORD, port: vars.DB_PORT, host: vars.DB_HOST});
 	const d = (await parseCsv("courses.csv")).map(convertNulls);
-	con.insertCourses(d);
+	await con.insertCourses(d);
 	const web = new WebServer(con, vars.WEB_PORT);
-	await web.listen().then(() => console.log("Express listening on port 80"));
+	await web.listen().then(() => console.log(`Express listening on port ${vars.WEB_PORT}`));
 };
 
 main().catch(s => console.log(s));

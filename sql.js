@@ -234,7 +234,7 @@ const isCourseEntry = pe => {
 
 	return typeof pe["course"] === "string" &&
 	typeof pe["name"] === "string" &&
-	(pe["description"] === undefined || typeof pe["description"] === "string");
+	(pe["description"] == null || typeof pe["description"] === "string");
 };
 
 /**
