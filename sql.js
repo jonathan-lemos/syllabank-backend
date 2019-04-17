@@ -478,10 +478,9 @@ export default class SQLServer {
 				await Promise.all([
 					execute(con2, `
 						CREATE TABLE IF NOT EXISTS ${PROFESSOR_TABLE} (
-							id INT AUTO_INCREMENT PRIMARY KEY,
+							n_number CHAR(9) NOT NULL PRIMARY KEY,
 							first_name VARCHAR(255) NOT NULL,
-							last_name VARCHAR(255) NOT NULL,
-							n_number CHAR(9) NOT NULL
+							last_name VARCHAR(255) NOT NULL
 						);
 					`),
 					execute(con2, `
@@ -502,14 +501,14 @@ export default class SQLServer {
 							id INT AUTO_INCREMENT PRIMARY KEY,
 							file_id INT NOT NULL,
 							course CHAR(7) NOT NULL,
-							professor INT NOT NULL,
+							professor CHAR(9) NOT NULL,
 							time_begin TIME NOT NULL,
 							time_end TIME NOT NULL,
 							days ENUM('MWF', 'TR', 'MW', 'Online') NOT NULL,
 							term ENUM('Spring', 'Summer', 'Fall') NOT NULL,
 							year INT NOT NULL,
 							FOREIGN KEY (file_id) REFERENCES ${FILENAME_TABLE}(file_id),
-							FOREIGN KEY (professor) REFERENCES ${PROFESSOR_TABLE}(id),
+							FOREIGN KEY (professor) REFERENCES ${PROFESSOR_TABLE}(n_number),
 							FOREIGN KEY (course) REFERENCES ${COURSES_TABLE}(course),
 							UNIQUE(course, professor, time_begin, term, year)
 						); 
@@ -518,7 +517,7 @@ export default class SQLServer {
 						CREATE OR REPLACE VIEW ${SYLLAVIEW_VIEW} AS
 						SELECT S.file_id, S.course, P.first_name, P.last_name, S.time_begin, S.time_end, S.days, S.term, S.year
 						FROM ${SYLLABUS_TABLE} S, ${PROFESSOR_TABLE} P
-						WHERE S.professor = P.id;
+						WHERE S.professor = P.n_number;
 					`),
 				]);
 			}
@@ -620,7 +619,7 @@ export default class SQLServer {
 			];
 		});
 
-		return this._query(`INSERT INTO ${PROFESSOR_TABLE} (first_name, last_name, n_number) VALUES ? ON DUPLICATE KEY UPDATE id=id;`, [q]);
+		return this._query(`INSERT INTO ${PROFESSOR_TABLE} (first_name, last_name, n_number) VALUES ? ON DUPLICATE KEY UPDATE n_number=n_number;`, [q]);
 	}
 
 	/**
@@ -637,18 +636,18 @@ export default class SQLServer {
 			if (typeof first === "string" && typeof last === "string") {
 				first = mysql.escape(first);
 				last = mysql.escape(last);
-				const res = await this._query(`SELECT id FROM ${PROFESSOR_TABLE} WHERE first_name=${first} AND last_name=${last};`);
-				return res.map(s => s["id"]);
+				const res = await this._query(`SELECT n_number FROM ${PROFESSOR_TABLE} WHERE first_name=${first} AND last_name=${last};`);
+				return res.map(s => s["n_number"]);
 			}
 			if (typeof first === "string") {
 				first = mysql.escape(first);
-				const res = await this._query(`SELECT id FROM ${PROFESSOR_TABLE} WHERE first_name=${first};`);
-				return res.map(s => s["id"]);
+				const res = await this._query(`SELECT n_number FROM ${PROFESSOR_TABLE} WHERE first_name=${first};`);
+				return res.map(s => s["n_number"]);
 			}
 			else {
 				last = mysql.escape(last);
-				const res = await this._query(`SELECT id FROM ${PROFESSOR_TABLE} WHERE last_name=${last};`);
-				return res.map(s => s["id"]);
+				const res = await this._query(`SELECT n_number FROM ${PROFESSOR_TABLE} WHERE last_name=${last};`);
+				return res.map(s => s["n_number"]);
 			}
 		};
 
@@ -747,7 +746,7 @@ export default class SQLServer {
 			return Promise.reject("fields needs to be a partial SyllabusEntry object.");
 		}
 
-		return this._query(`SELECT first_name, last_name, n_number FROM ${PROFESSOR_TABLE} ${partialWhere(fields)};`);
+		return this._query(`SELECT * FROM ${PROFESSOR_TABLE} ${partialWhere(fields)};`);
 	}
 
 	/**
