@@ -26,18 +26,9 @@ export default class WebServer {
 		this.web.use(express.static(baseDir));
 		this.web.get("/", (req, res) => res.sendFile(path.join(baseDir, defaultFile)));
 
-		this.web.get("/api/select", async (req, res) => {
-			try {
-				res.json(await this.con.select(req.query));
-			}
-			catch (e) {
-				WebServer._senderror(res, e);
-			}
-		});
-
 		this.web.get("/api/selectSylabi", async (req, res) => {
 			try {
-				res.json(await this.con.selectProfessors(req.query));
+				res.json(await this.con.selectSyllaviews(req.query));
 			}
 			catch (e) {
 				WebServer._senderror(res, e);
@@ -55,7 +46,25 @@ export default class WebServer {
 
 		this.web.get("/api/selectCourses", async (req, res) => {
 			try {
-				res.json(await this.con.selectProfessors(req.query));
+				res.json(await this.con.selectCourses(req.query));
+			}
+			catch (e) {
+				WebServer._senderror(res, e);
+			}
+		});
+
+		this.web.get("/api/sendFile/:id", async (req, res) => {
+			if (req.params.id === undefined) {
+				WebServer._senderror("Route param id must be given");
+				return;
+			}
+			try {
+				const r = await this.con.selectFiles({file_id: req.params.id});
+				if (r.length === 0) {
+					WebServer._senderror(`No file with id ${req.params.id} exists`);
+					return;
+				}
+				res.download(r[0].filename, "download.pdf");
 			}
 			catch (e) {
 				WebServer._senderror(res, e);
@@ -71,8 +80,8 @@ export default class WebServer {
 	}
 
 	async listen() {
-		return new Promise((resolve, reject) => {
+		return new Promise(resolve => {
 			this.nodeServer = this.web.listen(this.port, () => resolve());
-		})
+		});
 	}
 }

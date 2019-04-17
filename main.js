@@ -55,10 +55,24 @@ const vars = {
 	WEB_PORT: parseInt(process.env.WEB_PORT, 10) || 80,
 };
 
+const insertCsvs = async (con) => {
+	const courses = (await parseCsv("courses.csv")).map(convertNulls);
+	await con.insertCourses(courses);
+
+	const profs = (await parseCsv("professors.csv")).map(convertNulls);
+	await con.insertProfessors(profs);
+
+	const filenames = (await parseCsv("filenames.csv")).map(convertNulls);
+	await con.insertFiles(filenames);
+
+	const syllabi = (await parseCsv("syllabi.csv")).map(convertNulls);
+	await con.insertSyllaviews(syllabi);
+};
+
 const main = async () => {
 	const con = await SQLServer.create({database: vars.DB_NAME, user: vars.DB_USER, password: vars.DB_PASSWORD, port: vars.DB_PORT, host: vars.DB_HOST});
-	const d = (await parseCsv("courses.csv")).map(convertNulls);
-	await con.insertCourses(d);
+	await insertCsvs(con);
+
 	const web = new WebServer(con, vars.WEB_PORT);
 	await web.listen().then(() => console.log(`Express listening on port ${vars.WEB_PORT}`));
 };
