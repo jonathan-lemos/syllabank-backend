@@ -1,0 +1,7 @@
+# Optionally create a .env file based on these options
+DB_HOST=localhost
+DB_NAME=syllabank
+DB_USER=root
+DB_PASSWORD=root
+DB_PORT=3306
+WEB_PORT=3000
