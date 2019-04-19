@@ -353,10 +353,9 @@ const partialWhere = se => {
  * |----------------------------------------------------------------------------------------------------------------------------------------------|
  * |    name         |              type                 |          flags             |                        description                        |
  * |-----------------|-----------------------------------|----------------------------|-----------------------------------------------------------|
- * | id              | INT                               | AUTO_INCREMENT PRIMARY KEY | Integer primary key for fast indexing.                    |
+ * | n_number        | CHAR(9)                           | PRIMARY KEY                | Professor N-Number.                                       |
  * | first_name      | VARCHAR(255)                      | NOT NULL                   | First name of professor.                                  |
  * | last_name       | VARCHAR(255)                      | NOT NULL                   | Last name of professor.                                   |
- * | n_number        | CHAR(9)                           | NOT NULL                   | Professor N-Number.                                       |
  * ------------------------------------------------------------------------------------------------------------------------------------------------
  *
  * ------------------------------------------------------------------------------------------------------------------------------------------------
@@ -504,7 +503,7 @@ export default class SQLServer {
 							professor CHAR(9) NOT NULL,
 							time_begin TIME NOT NULL,
 							time_end TIME NOT NULL,
-							days ENUM('MWF', 'TR', 'MW', 'Online') NOT NULL,
+							days ENUM('MWF', 'TR', 'MW', 'MTWR', 'Online') NOT NULL,
 							term ENUM('Spring', 'Summer', 'Fall') NOT NULL,
 							year INT NOT NULL,
 							FOREIGN KEY (file_id) REFERENCES ${FILENAME_TABLE}(file_id),

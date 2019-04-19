@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import cors from "cors";
 
 export default class WebServer {
 	static _senderror(res, msg) {
@@ -27,6 +28,7 @@ export default class WebServer {
 		this.con = sqlcon;
 		this.port = port;
 		this.web = express();
+		this.web.use(cors())
 		this.web.use(express.static(baseSiteDir));
 		this.web.get("/", (req, res) => res.sendFile(path.join(baseSiteDir, homepage)));
 
