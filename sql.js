@@ -13,7 +13,7 @@ const FILENAME_TABLE = "filenames";
  * A given unknown object is turned into JSON.
  * A given Error returns its message.
  * null/undefined return the string "Null error"
- * @param {any} e 
+ * @param {any} e
  * @returns {string} The converted error.
  */
 const errToString = e => {
@@ -121,7 +121,7 @@ const isPartialSyllinsert = se => {
  *     year: number
  * }
  * first_name and/or last_name must be specified.
- * @param {any} se 
+ * @param {any} se
  * @returns {boolean}
  */
 const isSyllaview = se => {
@@ -143,7 +143,7 @@ const isSyllaview = se => {
 
 /**
  * Returns true if an object is a subset of the above
- * @param {any} se 
+ * @param {any} se
  * @returns {boolean}
  */
 const isPartialSyllaview = se => {
@@ -179,7 +179,7 @@ const isPartialSyllaview = se => {
  *     last_name: string
  *     n_number: string
  * }
- * @param {any} pe 
+ * @param {any} pe
  * @returns {boolean}
  */
 const isProfessorEntry = pe => {
@@ -194,7 +194,7 @@ const isProfessorEntry = pe => {
 
 /**
  * Returns true if an object is a subset of the above
- * @param {any} se 
+ * @param {any} se
  * @returns {boolean}
  */
 const isPartialProfessorEntry = se => {
@@ -239,7 +239,7 @@ const isCourseEntry = pe => {
 
 /**
  * Returns true if an object is a subset of the above
- * @param {any} se 
+ * @param {any} se
  * @returns {boolean}
  */
 const isPartialCourseEntry = se => {
@@ -294,7 +294,7 @@ const isPartialFileEntry = fe => {
 
 /**
  * Generates a WHERE clause ANDing all the fields in an object
- * @param {Object} se 
+ * @param {Object} se
  * @returns {string}
  */
 const partialWhere = se => {
@@ -484,7 +484,7 @@ export default class SQLServer {
 					`),
 					execute(con2, `
 						CREATE TABLE IF NOT EXISTS ${COURSES_TABLE} (
-							course CHAR(7) PRIMARY KEY,
+							course CHAR(8) PRIMARY KEY,
 							name VARCHAR(255) NOT NULL,
 							description TEXT NULL
 						);
@@ -499,7 +499,7 @@ export default class SQLServer {
  						CREATE TABLE IF NOT EXISTS ${SYLLABUS_TABLE} (
 							id INT AUTO_INCREMENT PRIMARY KEY,
 							file_id INT NOT NULL,
-							course CHAR(7) NOT NULL,
+							course CHAR(8) NOT NULL,
 							professor CHAR(9) NOT NULL,
 							time_begin TIME NOT NULL,
 							time_end TIME NOT NULL,
@@ -510,7 +510,7 @@ export default class SQLServer {
 							FOREIGN KEY (professor) REFERENCES ${PROFESSOR_TABLE}(n_number),
 							FOREIGN KEY (course) REFERENCES ${COURSES_TABLE}(course),
 							UNIQUE(course, professor, time_begin, term, year)
-						); 
+						);
 					`),
 					execute(con2, `
 						CREATE OR REPLACE VIEW ${SYLLAVIEW_VIEW} AS

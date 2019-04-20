@@ -78,6 +78,8 @@ const insertCsvs = async (con) => {
 
 	if (vars.SYLLABI_CSV !== null) {
 		const syllabi = (await parseCsv(vars.SYLLABI_CSV)).map(convertNulls);
+		console.log(syllabi);
+		syllabi.forEach(s => s.filename = "the.pdf");
 		await con.insertSyllaviews(syllabi);
 	}
 };
