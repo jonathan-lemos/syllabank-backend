@@ -16,7 +16,7 @@ const FILENAME_TABLE = "filenames";
  * @param {any} e
  * @returns {string} The converted error.
  */
-const errToString = e => {
+const errToString = (e: any): string => {
 	if (e == null) {
 		return "Null error";
 	}
@@ -32,26 +32,24 @@ const errToString = e => {
 	return JSON.stringify(e);
 };
 
-/**
- * @typedef Syllinsert
- * @type {object}
- * @property {string} filename
- * @property {string} course
- * @property {string} first_name
- * @property {string} last_name
- * @property {string} time_begin
- * @property {string} time_end
- * @property {string} days
- * @property {string} term
- * @property {number} year
- */
+export interface Syllinsert {
+	filename: string;
+	course: string;
+	first_name: string | null;
+	last_name: string | null;
+	time_begin: string;
+	time_end: string;
+	days: "MWF" | "MTWR" | "TR" | "MW" | "Online";
+	term: "Spring" | "Summer" | "Fall";
+	year: number;
+}
 
 /**
  * Returns true if a given type is a Syllinsert
  * @param {any} si
  * @returns {boolean}
  */
-const isSyllinsert = si => {
+const isSyllinsert = (si: any): si is Syllinsert => {
 	if (typeof si !== "object") {
 		return false;
 	}
@@ -59,8 +57,8 @@ const isSyllinsert = si => {
 	return typeof si["filename"] === "string" &&
 	typeof si["course"] === "string" &&
 	(typeof si["first_name"] === "string" || typeof si["last_name"] === "string") &&
-	(typeof si["first_name"] === "string" || si["first_name"] == null) &&
-	(typeof si["last_name"] === "string" || si["last_name"] == null) &&
+	(typeof si["first_name"] === "string" || si["first_name"] === null) &&
+	(typeof si["last_name"] === "string" || si["last_name"] === null) &&
 	typeof si["time_begin"] === "string" &&
 	typeof si["time_end"] === "string" &&
 	typeof si["days"] === "string" &&
@@ -86,8 +84,8 @@ const isPartialSyllinsert = se => {
 		last_name: "",
 		time_begin: "",
 		time_end: "",
-		days: "",
-		term: "",
+		days: "MWF",
+		term: "Summer",
 		year: 0
 	}, Object.assign({}, se)));
 };
@@ -107,6 +105,18 @@ const isPartialSyllinsert = se => {
  * @property {number} year
  */
 
+export interface Syllaview {
+	filename: string;
+	course: string;
+	first_name: string;
+	last_name: string;
+	time_begin: string;
+	time_end: string;
+	days: "MWF" | "MTWR" | "TR" | "MW" | "Online";
+	term: "Spring" | "Summer" | "Fall";
+	year: number
+}
+
 /**
  * Returns true if a given object is a full Syllaview, meaning
  * {
@@ -124,16 +134,15 @@ const isPartialSyllinsert = se => {
  * @param {any} se
  * @returns {boolean}
  */
-const isSyllaview = se => {
+const isSyllaview = (se: any): se is Syllaview => {
 	if (typeof se !== "object") {
 		return false;
 	}
 
 	return typeof se["file_id"] === "number" &&
 	typeof se["course"] === "string" &&
-	(typeof se["first_name"] === "string" || typeof se["last_name"] === "string") &&
-	(typeof se["first_name"] === "string" || se["first_name"] == null) &&
-	(typeof se["last_name"] === "string" || se["last_name"] == null) &&
+	typeof se["first_name"] === "string" &&
+	typeof se["last_name"] === "string" &&
 	typeof se["time_begin"] === "string" &&
 	typeof se["time_end"] === "string" &&
 	typeof se["days"] === "string" &&
@@ -146,7 +155,7 @@ const isSyllaview = se => {
  * @param {any} se
  * @returns {boolean}
  */
-const isPartialSyllaview = se => {
+const isPartialSyllaview = (se: any): se is Partial<Syllaview> => {
 	if (typeof se !== "object") {
 		return false;
 	}
@@ -158,19 +167,17 @@ const isPartialSyllaview = se => {
 		last_name: "",
 		time_begin: "",
 		time_end: "",
-		days: "",
-		term: "",
+		days: "MW",
+		term: "Summer",
 		year: 0
 	}, Object.assign({}, se)));
 };
 
-/**
- * @typedef ProfessorEntry
- * @type {object}
- * @property {string} first_name
- * @property {string} last_name
- * @property {string} n_number
- */
+export interface ProfessorEntry {
+	first_name: string;
+	last_name: string;
+	n_number: string
+}
 
 /**
  * Returns true if a given object is a full ProfessorEntry, meaning
@@ -182,7 +189,7 @@ const isPartialSyllaview = se => {
  * @param {any} pe
  * @returns {boolean}
  */
-const isProfessorEntry = pe => {
+const isProfessorEntry = (pe: any): pe is ProfessorEntry => {
 	if (typeof pe !== "object") {
 		return false;
 	}
@@ -197,7 +204,7 @@ const isProfessorEntry = pe => {
  * @param {any} se
  * @returns {boolean}
  */
-const isPartialProfessorEntry = se => {
+const isPartialProfessorEntry = (se: any): se is Partial<ProfessorEntry> => {
 	if (typeof se !== "object") {
 		return false;
 	}
@@ -216,6 +223,11 @@ const isPartialProfessorEntry = se => {
  * @property {string} name
  * @property {string} description?
  */
+export interface CourseEntry {
+	course: string;
+	name: string;
+	description?: string | null
+}
 
 /**
  * Returns true if a given object is a full CourseEntry, meaning
@@ -227,14 +239,14 @@ const isPartialProfessorEntry = se => {
  * @param {any} pe
  * @returns {boolean}
  */
-const isCourseEntry = pe => {
+const isCourseEntry = (pe: any): pe is CourseEntry => {
 	if (typeof pe !== "object") {
 		return false;
 	}
 
 	return typeof pe["course"] === "string" &&
 	typeof pe["name"] === "string" &&
-	(pe["description"] == null || typeof pe["description"] === "string");
+	(pe["description"] === null || typeof pe["description"] === "string");
 };
 
 /**
@@ -242,7 +254,7 @@ const isCourseEntry = pe => {
  * @param {any} se
  * @returns {boolean}
  */
-const isPartialCourseEntry = se => {
+const isPartialCourseEntry = (se: any): se is Partial<CourseEntry> => {
 	if (typeof se !== "object") {
 		return false;
 	}
@@ -250,7 +262,7 @@ const isPartialCourseEntry = se => {
 	return isCourseEntry(Object.assign({
 		course: "",
 		name: "",
-		description: "",
+		description: null,
 	}, Object.assign({}, se)));
 };
 
@@ -261,6 +273,11 @@ const isPartialCourseEntry = se => {
  * @property {string} filename
  */
 
+export interface FileEntry {
+	file_id: number;
+	filename: string;
+}
+
 /**
  * Returns true if a given object is a full CourseEntry, meaning
  * {
@@ -269,12 +286,13 @@ const isPartialCourseEntry = se => {
  * @param {any} fe
  * @returns {boolean}
  */
-const isFileEntry = fe => {
+const isFileEntry = (fe: any): fe is FileEntry => {
 	if (typeof fe !== "object") {
 		return false;
 	}
 
-	return typeof fe["filename"] === "string";
+	return typeof fe["filename"] === "string" &&
+		typeof fe["file_id"] === "number";
 };
 
 /**
@@ -282,14 +300,12 @@ const isFileEntry = fe => {
  * @param {any} fe
  * @returns {boolean}
  */
-const isPartialFileEntry = fe => {
+const isPartialFileEntry = (fe: any): fe is Partial<FileEntry> => {
 	if (typeof fe !== "object") {
 		return false;
 	}
 
-	return isFileEntry(Object.assign({
-		filename: "",
-	}, Object.assign({}, fe)));
+	return typeof fe["filename"] === "string";
 };
 
 /**
