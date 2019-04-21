@@ -6,7 +6,7 @@ import deepEqual from "deep-equal";
  * @param {any[]} b
  * @returns {boolean}
  */
-export function equivalent(a, b) {
+export function equivalent<T>(a: T[], b: T[]): boolean {
 	a = dedupe(a);
 	b = dedupe(b);
 
@@ -32,8 +32,8 @@ export function equivalent(a, b) {
  * @param {any[]} arr
  * @returns {any[]}
  */
-export function dedupe(arr) {
-	let output = [];
+export function dedupe<T>(arr: T[]): T[] {
+	let output: T[] = [];
 	for (let i = 0; i < arr.length; ++i) {
 		let j;
 		for (j = i + 1; j < arr.length; ++j) {
@@ -53,7 +53,7 @@ export function dedupe(arr) {
  * @param  {...any[]} arg
  * @returns {any[]}
  */
-export function intersection(...arg) {
+export function intersection<T>(...arg: T[][]): T[] {
 	if (arg.length === 0) {
 		return [];
 	}
@@ -79,7 +79,7 @@ export function intersection(...arg) {
  * @returns {any[]}
  */
 
-export function union(...arg) {
+export function union<T>(...arg: T[][]): T[] {
 	return arg.reduce((a, k) => a.concat(dedupe(k)), []);
 }
 
@@ -89,7 +89,7 @@ export function union(...arg) {
  * @param {any[]} b
  * @returns {object} {a: any[], b: any[]}
  */
-export function diff(a, b) {
+export function diff<T>(a: T[], b: T[]): {a: T[], b: T[]} {
 	a = dedupe(a);
 	b = dedupe(b);
 	const aret = a.filter(elem => {

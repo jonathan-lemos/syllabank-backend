@@ -313,7 +313,7 @@ const isPartialFileEntry = (fe: any): fe is Partial<FileEntry> => {
  * @param {Object} se
  * @returns {string}
  */
-const partialWhere = se => {
+const partialWhere = (se: { [ index: string ]: any }): string => {
 	let ret = "";
 	let first = true;
 
@@ -379,7 +379,7 @@ const partialWhere = se => {
  * |----------------------------------------------------------------------------------------------------------------------------------------------|
  * |    name         |              type                 |          flags             |                        description                        |
  * |-----------------|-----------------------------------|----------------------------|-----------------------------------------------------------|
- * | course          | CHAR(7)                           | PRIMARY KEY                | Course code (e.g. COT3100)                                |
+ * | course          | CHAR(8)                           | PRIMARY KEY                | Course code (e.g. COT3100)                                |
  * | name            | VARCHAR(255)                      | NOT NULL                   | Name of course (e.g. Computational Structures)            |
  * | description     | TEXT                              | NULL                       | Description of course                                     |
  * ------------------------------------------------------------------------------------------------------------------------------------------------
@@ -390,7 +390,7 @@ const partialWhere = se => {
  * |     name        |              type                 |          flags             |                        description                        |
  * |-----------------|-----------------------------------|----------------------------|-----------------------------------------------------------|
  * | file_id         | INT                               | NOT NULL FOREIGN KEY       | References filename table.                                |
- * | course          | CHAR(7)                           | FOREIGN KEY                | Course code of professor. References course table course. |
+ * | course          | CHAR(8)                           | FOREIGN KEY                | Course code of professor. References course table course. |
  * | first_name      | VARCHAR(255)                      | NOT NULL                   | First name of professor.                                  |
  * | last_name       | VARCHAR(255)                      | NOT NULL                   | Last name of professor.                                   |
  * | time_begin      | TIME                              | NOT NULL                   | Start time of class. Format HH:MM:SS.                     |
@@ -401,6 +401,8 @@ const partialWhere = se => {
  * ------------------------------------------------------------------------------------------------------------------------------------------------
  */
 export default class SQLServer {
+	private con: mysql.Connection;
+	private readonly dbName: string;
 
 	/**
 	 * Queries the database.
@@ -410,13 +412,9 @@ export default class SQLServer {
 	 * @param {string} query          The query to execute
 	 * @param {Array | undefined}  preparedParams Any prepared parameters to put in.
 	 */
-	async _query(query, preparedParams = undefined) {
-		if (typeof query !== "string") {
-			throw new Error("query must be a string");
-		}
-
+	private async query(query: string, preparedParams?: any[]): Promise<Array<{[key: string]: any}>> {
 		return new Promise((resolve, reject) => {
-			const cb = (err, results) => {
+			const cb = (err: mysql.MysqlError | null, results: Array<{[key: string]: any}>) => {
 				if (err) {
 					reject(errToString(err));
 					return;
@@ -445,7 +443,7 @@ export default class SQLServer {
 	 *
 	 * @returns {Promise<SQLServer>} A Promise that will contain a new SqlServer or an error (string) detailing what happened.
 	 */
-	static async create({ database = "syllabank", host = "localhost", password, port = 3306, user = "root" }) {
+	public static async create({ database = "syllabank", host = "localhost", password = "root", port = 3306, user = "root" }): Promise<SQLServer> {
 		return new Promise(async (resolve, reject) => {
 			// connection without database (in case the db does not exist yet)
 			const con1 = mysql.createConnection({
@@ -464,8 +462,8 @@ export default class SQLServer {
 				user,
 			});
 
-			const connect = con => new Promise((res, rej) => {
-				con.connect(err => {
+			const connect = (con: mysql.Connection) => new Promise((res, rej) => {
+				con.connect((err: mysql.MysqlError) => {
 					if (err) {
 						rej(errToString(err));
 						return;
@@ -474,8 +472,8 @@ export default class SQLServer {
 				});
 			});
 
-			const execute = (con, query) => new Promise((res, rej) => {
-				con.query(query, err => {
+			const execute = (con: mysql.Connection, query: string) => new Promise((res, rej) => {
+				con.query(query, (err: mysql.MysqlError) => {
 					if (err) {
 						rej(errToString(err));
 						return;
@@ -550,7 +548,7 @@ export default class SQLServer {
 	 * @param {Connection} con    MySQL.Connection created from SQLServer.create()
 	 * @param {string}           dbName The name of the database to connect to.
 	 */
-	constructor(con, dbName) {
+	private constructor(con: mysql.Connection, dbName: string) {
 		this.con = con;
 		this.dbName = dbName;
 	}
@@ -560,7 +558,7 @@ export default class SQLServer {
 	 * @param {FileEntry | FileEntry[]} files
 	 * @returns {Promise<void>}
 	 */
-	async insertFiles(files) {
+	public async insertFiles(files: FileEntry | FileEntry[]): Promise<void> {
 		if (!Array.isArray(files)) {
 			files = [files];
 		}
@@ -569,14 +567,9 @@ export default class SQLServer {
 			return;
 		}
 
-		const q = files.map(s => {
-			if (!isFileEntry(s)) {
-				throw new Error("All arguments of insertFile must be FileEntries");
-			}
-			return [s.filename];
-		});
+		const q = files.map((s: FileEntry) => [s.filename]);
 
-		return this._query(`INSERT INTO ${FILENAME_TABLE} (filename) VALUES ? ON DUPLICATE KEY UPDATE file_id=file_id;`, [q]);
+		await this.query(`INSERT INTO ${FILENAME_TABLE} (filename) VALUES ? ON DUPLICATE KEY UPDATE file_id=file_id;`, [q]);
 	}
 
 	/**
@@ -584,7 +577,7 @@ export default class SQLServer {
 	 * @param {CourseEntry[] | CourseEntry} fields An array or a single Course to insert
 	 * @returns {Promise<void>}
 	 */
-	async insertCourses(fields) {
+	public async insertCourses(fields: CourseEntry | CourseEntry[]): Promise<void> {
 		if (!Array.isArray(fields)) {
 			fields = [fields];
 		}
@@ -594,10 +587,6 @@ export default class SQLServer {
 		}
 
 		const q = fields.map(s => {
-			if (!isCourseEntry(s)) {
-				throw new Error("All arguments of insertCourse must be CourseEntries");
-			}
-
 			return [
 				s.course,
 				s.name,
@@ -605,7 +594,7 @@ export default class SQLServer {
 			];
 		});
 
-		return this._query(`INSERT INTO ${COURSES_TABLE} VALUES ? ON DUPLICATE KEY UPDATE course=course;`, [q]);
+		await this.query(`INSERT INTO ${COURSES_TABLE} VALUES ? ON DUPLICATE KEY UPDATE course=course;`, [q]);
 	}
 
 	/**
@@ -613,7 +602,7 @@ export default class SQLServer {
 	 * @param {ProfessorEntry[] | ProfessorEntry} fields An array or a single Professor to insert
 	 * @returns {Promise<void>}
 	 */
-	async insertProfessors(fields) {
+	public async insertProfessors(fields: ProfessorEntry | ProfessorEntry[]): Promise<void> {
 		if (!Array.isArray(fields)) {
 			fields = [fields];
 		}
@@ -623,10 +612,6 @@ export default class SQLServer {
 		}
 
 		const q = fields.map(s => {
-			if (!isProfessorEntry(s)) {
-				throw new Error("All arguments of insertCourse must be CourseEntries");
-			}
-
 			return [
 				s.first_name,
 				s.last_name,
@@ -634,7 +619,7 @@ export default class SQLServer {
 			];
 		});
 
-		return this._query(`INSERT INTO ${PROFESSOR_TABLE} (first_name, last_name, n_number) VALUES ? ON DUPLICATE KEY UPDATE n_number=n_number;`, [q]);
+		await this.query(`INSERT INTO ${PROFESSOR_TABLE} (first_name, last_name, n_number) VALUES ? ON DUPLICATE KEY UPDATE n_number=n_number;`, [q]);
 	}
 
 	/**
@@ -643,35 +628,32 @@ export default class SQLServer {
 	 * @param {Syllinsert[] | Syllinsert} fields
 	 * @returns {Promise<void>}
 	 */
-	async insertSyllaviews(fields) {
-		const profToId = async ({ first, last }) => {
+	public async insertSyllaviews(fields: Syllinsert | Syllinsert[]): Promise<void> {
+		const profToId = async ({ first, last }: { first: string | null, last: string | null }): Promise<number[]> => {
 			if (typeof first !== "string" && typeof last !== "string") {
 				return Promise.reject("Need to give a first name or last name");
 			}
 			if (typeof first === "string" && typeof last === "string") {
 				first = mysql.escape(first);
 				last = mysql.escape(last);
-				const res = await this._query(`SELECT n_number FROM ${PROFESSOR_TABLE} WHERE first_name=${first} AND last_name=${last};`);
+				const res = await this.query(`SELECT n_number FROM ${PROFESSOR_TABLE} WHERE first_name=${first} AND last_name=${last};`);
 				return res.map(s => s["n_number"]);
 			}
 			if (typeof first === "string") {
 				first = mysql.escape(first);
-				const res = await this._query(`SELECT n_number FROM ${PROFESSOR_TABLE} WHERE first_name=${first};`);
+				const res = await this.query(`SELECT n_number FROM ${PROFESSOR_TABLE} WHERE first_name=${first};`);
 				return res.map(s => s["n_number"]);
 			}
 			else {
 				last = mysql.escape(last);
-				const res = await this._query(`SELECT n_number FROM ${PROFESSOR_TABLE} WHERE last_name=${last};`);
+				const res = await this.query(`SELECT n_number FROM ${PROFESSOR_TABLE} WHERE last_name=${last};`);
 				return res.map(s => s["n_number"]);
 			}
 		};
 
-		const fileToId = async (filename) => {
-			if (typeof filename !== "string") {
-				return Promise.reject("Filename must be a string");
-			}
+		const fileToId = async (filename: string): Promise<number[]> => {
 			filename = mysql.escape(filename);
-			const res = await this._query(`SELECT file_id FROM ${FILENAME_TABLE} WHERE filename=${filename};`);
+			const res = await this.query(`SELECT file_id FROM ${FILENAME_TABLE} WHERE filename=${filename};`);
 			return res.map(s => s["file_id"]);
 		};
 
@@ -685,7 +667,7 @@ export default class SQLServer {
 
 		const q = await Promise.all(fields.map(async s => {
 			if (!isSyllinsert(s)) {
-				throw new Error("All arguments of insertSyllaview must be Syllinserts");
+				return Promise.reject(`Given object is not a syllinsert:\n${JSON.stringify(s)}`);
 			}
 
 			const ids = await profToId({ first: s.first_name, last: s.last_name });
@@ -695,7 +677,7 @@ export default class SQLServer {
 
 			const files = await fileToId(s.filename);
 			if (files.length === 0) {
-				throw new Error(`No file found with the filename: ${s.first_name}`);
+				throw new Error(`No file found with the filename: "${s.first_name}"`);
 			}
 
 			return [
@@ -713,7 +695,7 @@ export default class SQLServer {
 
 		const keys = ["file_id", "course", "professor", "time_begin", "time_end", "days", "term", "year"];
 
-		return this._query(`INSERT INTO ${SYLLABUS_TABLE} (${keys.join(",")}) VALUES ? ON DUPLICATE KEY UPDATE id=id;`, [q]);
+		await this.query(`INSERT INTO ${SYLLABUS_TABLE} (${keys.join(",")}) VALUES ? ON DUPLICATE KEY UPDATE id=id;`, [q]);
 	}
 
 	/**
@@ -724,12 +706,18 @@ export default class SQLServer {
 	 * See the table above for a list of fields.
 	 * @returns {Promise<FileEntry[]>}
 	 */
-	async selectFiles(fields) {
+	public async selectFiles(fields: Partial<FileEntry>): Promise<FileEntry[]> {
 		if (!isPartialFileEntry(fields)) {
-			return Promise.reject("fields needs to be a partial FileEntry object.");
+			return Promise.reject(`Fields must be a Partial<FileEntry>, was:\n${JSON.stringify(fields)}`)
 		}
 
-		return this._query(`SELECT * FROM ${FILENAME_TABLE} ${partialWhere(fields)};`);
+		const res = await this.query(`SELECT * FROM ${FILENAME_TABLE} ${partialWhere(fields)};`);
+		for (const v of res) {
+			if (!isFileEntry(v)) {
+				return Promise.reject(`Internal error: Returned object not FileEntry:\n${JSON.stringify(v)}`)
+			}
+		}
+		return (res as FileEntry[]);
 	}
 
 	/**
@@ -740,12 +728,18 @@ export default class SQLServer {
 	 * See the table above for a list of fields.
 	 * @returns {Promise<Syllaview[]>}
 	 */
-	async selectSyllaviews(fields) {
+	public async selectSyllaviews(fields: Partial<Syllaview>): Promise<Syllaview[]> {
 		if (!isPartialSyllaview(fields)) {
-			return Promise.reject("fields needs to be a partial SyllabusEntry object.");
+			return Promise.reject(`fields needs to be a partial SyllabusEntry object, was\n${JSON.stringify(fields)}`);
 		}
 
-		return this._query(`SELECT * FROM ${SYLLAVIEW_VIEW} ${partialWhere(fields)};`);
+		const res = await this.query(`SELECT * FROM ${SYLLAVIEW_VIEW} ${partialWhere(fields)};`);
+		for (const v of res) {
+			if (!isSyllaview(v)) {
+				return Promise.reject(`Internal error: Returned object not Syllaview:\n${JSON.stringify(v)}`)
+			}
+		}
+		return (res as Syllaview[]);
 	}
 
 	/**
@@ -756,12 +750,18 @@ export default class SQLServer {
 	 * See the table above for a list of fields.
 	 * @returns {Promise<ProfessorEntry[]>}
 	 */
-	async selectProfessors(fields) {
+	public async selectProfessors(fields: Partial<ProfessorEntry>): Promise<ProfessorEntry[]> {
 		if (!isPartialProfessorEntry(fields)) {
-			return Promise.reject("fields needs to be a partial SyllabusEntry object.");
+			return Promise.reject(`fields needs to be a partial SyllabusEntry object, was\n${JSON.stringify(fields)}`);
 		}
 
-		return this._query(`SELECT * FROM ${PROFESSOR_TABLE} ${partialWhere(fields)};`);
+		const res = await this.query(`SELECT * FROM ${PROFESSOR_TABLE} ${partialWhere(fields)};`);
+		for (const v of res) {
+			if (!isProfessorEntry(v)) {
+				return Promise.reject(`Internal error: Returned object not ProfessorEntry:\n${JSON.stringify(v)}`)
+			}
+		}
+		return (res as ProfessorEntry[]);
 	}
 
 	/**
@@ -772,30 +772,42 @@ export default class SQLServer {
 	 * See the table above for a list of fields.
 	 * @returns {Promise<CourseEntry[]>}
 	 */
-	async selectCourses(fields) {
+	public async selectCourses(fields: Partial<CourseEntry>): Promise<CourseEntry[]> {
 		if (!isPartialCourseEntry(fields)) {
-			return Promise.reject("fields needs to be a partial SyllabusEntry object.");
+			return Promise.reject(`fields needs to be a partial SyllabusEntry object, was\n${JSON.stringify(fields)}`);
 		}
 
-		return this._query(`SELECT * FROM ${COURSES_TABLE} ${partialWhere(fields)};`);
+		const res = await this.query(`SELECT * FROM ${COURSES_TABLE} ${partialWhere(fields)};`);
+		for (const v of res) {
+			if (!isCourseEntry(v)) {
+				return Promise.reject(`Internal error: Returned object not CourseEntry:\n${JSON.stringify(v)}`)
+			}
+		}
+		return (res as CourseEntry[]);
 	}
 
-	async searchCourses(name) {
-		if (typeof name !== "string") {
-			return Promise.reject("name must be a string");
-		}
+	public async searchCourses(name: string): Promise<CourseEntry[]> {
 		name = mysql.escape(name + "%");
 
-		return this._query(`SELECT * FROM ${COURSES_TABLE} WHERE course LIKE ${name} or name LIKE ${name} ORDER BY course ASC LIMIT 10;`);
+		const res = await this.query(`SELECT * FROM ${COURSES_TABLE} WHERE course LIKE ${name} or name LIKE ${name} ORDER BY course ASC LIMIT 10;`);
+		for (const v of res) {
+			if (!isCourseEntry(v)) {
+				return Promise.reject(`Internal error: Returned object not CourseEntry:\n${JSON.stringify(v)}`)
+			}
+		}
+		return (res as CourseEntry[]);
 	}
 
-	async searchProfessors(name) {
-		if (typeof name !== "string") {
-			return Promise.reject("name must be a string");
-		}
+	public async searchProfessors(name: string): Promise<ProfessorEntry[]> {
 		name = mysql.escape(name + "%");
 
-		return this._query(`SELECT * FROM ${PROFESSOR_TABLE} WHERE first_name LIKE ${name} OR last_name LIKE ${name} ORDER BY last_name ASC LIMIT 10;`);
+		const res = await this.query(`SELECT * FROM ${PROFESSOR_TABLE} WHERE first_name LIKE ${name} OR last_name LIKE ${name} ORDER BY last_name ASC LIMIT 10;`);
+		for (const v of res) {
+			if (!isProfessorEntry(v)) {
+				return Promise.reject(`Internal error: Returned object not ProfessorEntry:\n${JSON.stringify(v)}`)
+			}
+		}
+		return (res as ProfessorEntry[]);
 	}
 
 
@@ -803,7 +815,7 @@ export default class SQLServer {
 	 * Ends the connection to the SQL server.
 	 * @returns {Promise<void>}
 	 */
-	async end() {
+	public async end(): Promise<void> {
 		return new Promise((resolve, reject) => {
 			this.con.end(err => {
 				if (err) {
@@ -819,10 +831,10 @@ export default class SQLServer {
 	 * Ends the connection to the SQL server and drops all data associated with syllabank.
 	 * @returns {Promise<void>}
 	 */
-	async nuke() {
+	public async nuke(): Promise<void> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				await this._query(`DROP DATABASE IF EXISTS ${this.dbName}`);
+				await this.query(`DROP DATABASE IF EXISTS ${this.dbName}`);
 			}
 			catch (e) {
 				reject(errToString(e));

@@ -2,9 +2,9 @@
   "name": "syllabank-backend",
   "version": "1.0.0",
   "description": "",
-  "main": "main.js",
+  "main": "main.ts",
   "scripts": {
-    "start": "node -r esm main.js",
+    "start": "ts-node main.ts",
     "test": "jest"
   },
   "author": "Jonathan Lemos",
@@ -24,8 +24,9 @@
     "@types/express": "^4.16.1",
     "@types/jest": "^24.0.11",
     "@types/mysql": "^2.15.5",
-    "jest": "^24.7.1",
+    "@types/node": "^11.13.6",
     "eslint": "^5.16.0",
+    "jest": "^24.7.1",
     "ts-jest": "^24.0.2",
     "ts-loader": "^5.3.3",
     "tslint": "^5.16.0",
