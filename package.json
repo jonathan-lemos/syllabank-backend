@@ -17,7 +17,6 @@
     "mysql": "^2.16.0"
   },
   "devDependencies": {
-    "@types/chai": "^4.1.7",
     "@types/cors": "^2.8.4",
     "@types/deep-equal": "^1.0.1",
     "@types/dotenv": "^6.1.1",
