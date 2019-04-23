@@ -39,8 +39,8 @@ export interface Syllinsert {
 	last_name: string | null;
 	time_begin: string;
 	time_end: string;
-	days: "MWF" | "MTWR" | "TR" | "MW" | "Online";
-	term: "Spring" | "Summer" | "Fall";
+	days: string;
+	term: string;
 	year: number;
 }
 
@@ -106,14 +106,14 @@ const isPartialSyllinsert = se => {
  */
 
 export interface Syllaview {
-	filename: string;
+	file_id: number;
 	course: string;
 	first_name: string;
 	last_name: string;
 	time_begin: string;
 	time_end: string;
-	days: "MWF" | "MTWR" | "TR" | "MW" | "Online";
-	term: "Spring" | "Summer" | "Fall";
+	days: string;
+	term: string;
 	year: number
 }
 
@@ -305,7 +305,7 @@ const isPartialFileEntry = (fe: any): fe is Partial<FileEntry> => {
 		return false;
 	}
 
-	return typeof fe["filename"] === "string";
+	return fe["filename"] === undefined || typeof fe["filename"] === "string";
 };
 
 /**
@@ -558,7 +558,7 @@ export default class SQLServer {
 	 * @param {FileEntry | FileEntry[]} files
 	 * @returns {Promise<void>}
 	 */
-	public async insertFiles(files: FileEntry | FileEntry[]): Promise<void> {
+	public async insertFiles(files: {filename: string} | {filename: string}[]): Promise<void> {
 		if (!Array.isArray(files)) {
 			files = [files];
 		}
@@ -567,7 +567,7 @@ export default class SQLServer {
 			return;
 		}
 
-		const q = files.map((s: FileEntry) => [s.filename]);
+		const q = files.map((s: {filename: string}) => [s.filename]);
 
 		await this.query(`INSERT INTO ${FILENAME_TABLE} (filename) VALUES ? ON DUPLICATE KEY UPDATE file_id=file_id;`, [q]);
 	}

@@ -195,7 +195,7 @@ describe("sql tests", () => {
 		await con.insertSyllaviews(sampleSyllaviews);
 
 		const exp1 = [
-			{course: "COT3100", first_name: "Egg", last_name: "Man", time_begin: "14:30:00", time_end: "15:45:00", days: "TR", term: "Fall", year: 2018},
+			{file_id: 0, course: "COT3100", first_name: "Egg", last_name: "Man", time_begin: "14:30:00", time_end: "15:45:00", days: "TR", term: "Fall", year: 2018},
 		];
 		const res1 = await con.selectSyllaviews({ course: "COT3100", first_name: "Egg" });
 		expect(res1.length).toEqual(1);
@@ -203,7 +203,7 @@ describe("sql tests", () => {
 		const res2 = await con.selectFiles({filename: "yeet.pdf"});
 		expect(res2.length).toEqual(1);
 
-		exp1[0]["file_id"] = res2[0]["file_id"];
+		exp1[0].file_id = res2[0].file_id;
 
 		expect(equivalent(exp1, res1)).toEqual(true);
 

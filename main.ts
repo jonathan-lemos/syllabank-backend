@@ -2,7 +2,7 @@ import SQLServer from "./sql";
 import WebServer from "./web";
 import dotenv from "dotenv";
 import parseCsv from "./csv";
-import { CourseEntry, FileEntry, Syllaview, ProfessorEntry, Syllinsert } from "./sql";
+import { CourseEntry, FileEntry, ProfessorEntry, Syllinsert } from "./sql";
 
 dotenv.config();
 const vars = {
@@ -19,7 +19,7 @@ const vars = {
 	WEB_PDF_DIR: process.env.WEB_PDF_DIR || "pdfs",
 };
 
-const insertCsvs = async (con) => {
+const insertCsvs = async (con: SQLServer) => {
 	if (vars.COURSE_CSV !== null) {
 		const courses = (await parseCsv(vars.COURSE_CSV) as CourseEntry[]);
 		await con.insertCourses(courses);
